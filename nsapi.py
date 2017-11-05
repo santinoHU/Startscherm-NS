@@ -64,8 +64,13 @@ def command():
                 #     results.pack()
                 # el
                 if entry_to.get() in eindbestemming.lower():
-                    results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming
+                    results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + " vanaf spoor " + vertrekspoor['#text']
+                    if vertrekspoor["@wijziging"] == 'true':
+                        results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + \
+                                          vertrekspoor['#text'] + "\n !Let op: Spoorswijziging"
+
                     results.pack()
+                    print(vertrekspoor)
                 count += 1
 
     # assign variables
