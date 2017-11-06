@@ -2,8 +2,25 @@
 import requests
 import xmltodict
 from tkinter import *
+import tkinter.ttk as tkk
 from PIL import ImageTk, Image
 from auth import *
+
+
+# all stations to a tuple
+def allstations():
+    stationlist = []
+    stations_url = "http://webservices.ns.nl/ns-api-stations"
+    response = requests.get(stations_url, auth=auth_details)
+    stationsXML = xmltodict.parse(response.text)
+    for station in stationsXML['stations']['station']:
+        stationlist.append(station['name'])
+    return tuple(stationlist)
+
+
+# all NS staions
+stations = allstations()
+
 
 # assign color variables
 bg = "#FFD723" # yellow
@@ -50,7 +67,7 @@ def command():
     # function to check search results
     def search():
         # deletes text box before putting in some other text
-        results.delete('1.0', END)
+        results.delete('0.0', END)
         search_url = api_url + entry_from.get()
         # sets the default to alphen if there is no input
         if search_url == 'http://webservices.ns.nl/ns-api-avt?station=':
@@ -65,7 +82,7 @@ def command():
             eindbestemming = vertrek['EindBestemming']
             vertrektijd = vertrek['VertrekTijd']  # 2016-09-27T18:36:00+0200
             vertrektijd = vertrektijd[11:16]  # 18:36
-            vertrekspoor = vertrek['VertrekSpoor'] # returns ordered dict
+            vertrekspoor = vertrek['VertrekSpoor']  # returns ordered dict
             trein = vertrek['TreinSoort']
 
             if entry_to.get() in eindbestemming.lower() and count <= 9:
@@ -82,21 +99,29 @@ def command():
         top.withdraw()
 
     # assign variables
-    entry_from = Entry(top)
-    backbttn = Button(top, text="Home", command=showhome)
+
+    # create entry_from field, dropdown menu and default value
+    entry_from = tkk.Combobox(top)
+    entry_from.insert(END, 'Alphen a/d Rijn')
+    entry_from['values'] = stations
+
+    backbttn = Button(top, text="home", font=('Helvetica'), command=showhome)
     from_txt = Label(top, text="van*", foreground=fg, background=bg, font=('Helvetica'))
-    entry_to = Entry(top)
+
+    # create entry_to field and dropdown menu
+    entry_to = tkk.Combobox(top)
+    entry_to['values'] = stations
+
     to_txt = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica'))
     description = Label(top, text="Of zoek uw reis handmatig:", foreground=fg, background=bg, font=('Helvetica'))
     footer2 = Label(master=top, background=fg)
     searchbttn = Button(top, text="Zoeken", command=search)
     currentbttn = Button(top, text="Huidige stationsinformatie", command=search)
     title = Label(top, text="Welkom bij NS", foreground=fg, background=bg, font=('Helvetica', 22, 'bold'))
-    # subtitle = Label(top, text="Dit zijn de vertrekkende treinen:\n", foreground=fg, background=bg, font=('Helvetica'))
 
     # prints the variables to the GUI
+    backbttn.pack()
     title.pack(pady=(20,0)) # pady works as a tuple: (top, bottom)
-    backbttn.pack(pady=(20,0))
     currentbttn.pack(pady=(10,0))
     description.pack(pady=(10,0))
     from_txt.pack()
