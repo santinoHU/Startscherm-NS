@@ -44,8 +44,13 @@ def command():
     root.withdraw()
     top.deiconify()
 
+    # create textbox for results
+    results = Text(top, background=bg, foreground=fg, font=("bold", 10), wrap=NONE, padx=5, pady=5)
+
     # function to check search results
     def search():
+        # deletes text box before putting in some other text
+        results.delete('1.0', END)
         search_url = api_url + entry_from.get()
         # sets the default to alphen if there is no input
         if search_url == 'http://webservices.ns.nl/ns-api-avt?station=':
@@ -53,29 +58,24 @@ def command():
         response = requests.get(search_url, auth=auth_details)
         # returns search-information
         vertrekXML = xmltodict.parse(response.text)
-        count = 0
         # subtitle.pack(pady=(20, 0))
-        for vertrek in vertrekXML['ActueleVertrekTijden']['VertrekkendeTrein']:
-            # displays a maximum of 10 trains on the screen
-            if count <= 9:
-                eindbestemming = vertrek['EindBestemming']
-                vertrektijd = vertrek['VertrekTijd']  # 2016-09-27T18:36:00+0200
-                vertrektijd = vertrektijd[11:16]  # 18:36
-                vertrekspoor = vertrek['VertrekSpoor'] # returns ordered dict
-                trein = vertrek['TreinSoort']
-                results = Label(top, text="", background=bg, foreground=fg, font=("bold"))
-                # if entry_to.get() in eindbestemming.lower() and opmerking != "":
-                #     results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + opmerking
-                #     results.pack()
-                # el
-                if entry_to.get() in eindbestemming.lower():
-                    results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + " vanaf spoor " + vertrekspoor['#text']
-                    if vertrekspoor["@wijziging"] == 'true':
-                        results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + \
-                                          vertrekspoor['#text'] + "\n !Let op: Spoorswijziging"
 
-                    results.pack()
+        count = 0
+        for vertrek in vertrekXML['ActueleVertrekTijden']['VertrekkendeTrein']:
+            eindbestemming = vertrek['EindBestemming']
+            vertrektijd = vertrek['VertrekTijd']  # 2016-09-27T18:36:00+0200
+            vertrektijd = vertrektijd[11:16]  # 18:36
+            vertrekspoor = vertrek['VertrekSpoor'] # returns ordered dict
+            trein = vertrek['TreinSoort']
+
+            if entry_to.get() in eindbestemming.lower() and count <= 9:
                 count += 1
+                results.insert(0.0, "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + " vanaf spoor " + vertrekspoor['#text'] + "\n")
+                if vertrekspoor["@wijziging"] == 'true':
+                    results.insert(0.0, "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + vertrekspoor['#text'] + "\n !Let op: Spoorswijziging")
+
+            results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
+
 
     def showhome():
         root.deiconify()
