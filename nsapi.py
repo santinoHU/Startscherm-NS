@@ -9,10 +9,11 @@ from auth import *
 bg = "#FFD723" # yellow
 fg = "#013097" # blue
 
-# creates GUI
+# creates home GUI
 root = Tk()
 root.title("Welkom bij de NS")
 root.geometry("450x550")
+root.resizable(width=False, height=False)
 root.configure(background=bg)
 
 # assign buttons
@@ -29,12 +30,19 @@ placeholder = Label(master = root, background=bg)
 title = Label(text="Welkom bij NS", foreground="#002272", background=bg, font=('Helvetica', 22, 'bold'))
 panel = Label(root, image = img, background=bg)
 
+
 # function that opens the search GUI
 def command():
+    # create search GUI
     top = Toplevel(root)
     top.title("Plan uw reis")
     top.configure(background=bg)
     top.geometry("450x550")
+    top.resizable(width=False, height=False)
+    top.withdraw()
+
+    root.withdraw()
+    top.deiconify()
 
     # function to check search results
     def search():
@@ -67,11 +75,15 @@ def command():
                                           vertrekspoor['#text'] + "\n !Let op: Spoorswijziging"
 
                     results.pack()
-                    print(vertrekspoor)
                 count += 1
+
+    def showhome():
+        root.deiconify()
+        top.withdraw()
 
     # assign variables
     entry_from = Entry(top)
+    backbttn = Button(top, text="Home", command=showhome)
     from_txt = Label(top, text="van*", foreground=fg, background=bg, font=('Helvetica'))
     entry_to = Entry(top)
     to_txt = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica'))
@@ -84,6 +96,7 @@ def command():
 
     # prints the variables to the GUI
     title.pack(pady=(20,0)) # pady works as a tuple: (top, bottom)
+    backbttn.pack(pady=(20,0))
     currentbttn.pack(pady=(10,0))
     description.pack(pady=(10,0))
     from_txt.pack()
@@ -93,6 +106,7 @@ def command():
     entry_to.pack(padx=10, pady=0)
     searchbttn.pack(pady=(15,25))
     footer2.pack(side=BOTTOM, fill=X)
+
 
 # shows variables on the GUI
 title.pack(pady=20)
