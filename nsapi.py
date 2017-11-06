@@ -3,6 +3,7 @@ import requests
 import xmltodict
 from tkinter import *
 from PIL import ImageTk, Image
+from auth import *
 
 # assign color variables
 bg = "#FFD723" # yellow
@@ -13,10 +14,6 @@ root = Tk()
 root.title("Welkom bij de NS")
 root.geometry("450x550")
 root.configure(background=bg)
-
-# ns-api auth
-api_url = 'http://webservices.ns.nl/ns-api-avt?station='
-auth_details = ('santino.denbrave@student.hu.nl', 'P_v4mmnZiBdVPeEOPsIzVbggnwm1T9EPYPwT0yDZX6vo7Q5rK3VLpw')
 
 # assign buttons
 ticketbtn = Button(master = root, text="Kopen \n los kaartje", foreground="white", background=fg)
