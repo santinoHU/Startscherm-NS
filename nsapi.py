@@ -3,6 +3,7 @@ import requests
 import xmltodict
 from tkinter import *
 from PIL import ImageTk, Image
+import webbrowser
 
 # assign color variables
 bg = "#FFD723" # yellow
@@ -18,19 +19,24 @@ root.configure(background=bg)
 api_url = 'http://webservices.ns.nl/ns-api-avt?station='
 auth_details = ('santino.denbrave@student.hu.nl', 'P_v4mmnZiBdVPeEOPsIzVbggnwm1T9EPYPwT0yDZX6vo7Q5rK3VLpw')
 
+# Function to webpage
+def callback():
+    webbrowser.open_new(r"https://www.ns.nl")
+
 # assign buttons
-ticketbtn = Button(master = root, text="Kopen \n los kaartje", foreground="white", background=fg)
-cardbtn = Button(master = root, text="Kopen \n OV-Chipkaart", foreground="white", background=fg)
-abroadbtn = Button(master = root, text="Ik wil naar \n het buitenland", foreground="white", background=fg)
+ticketbtn = Button(master=root, text="Kopen \n los kaartje", foreground="white", background=fg, command=callback)
+
+cardbtn = Button(master=root, text="Kopen \n OV-Chipkaart", foreground="white", background=fg, command=callback)
+abroadbtn = Button(master=root, text="Ik wil naar \n het buitenland", foreground="white", background=fg, command=callback)
 
 # assign image
 img = ImageTk.PhotoImage(Image.open("img/ns_img.png"))
 
 # assign labels
-footer = Label(master = root, background=fg)
-placeholder = Label(master = root, background=bg)
+footer = Label(master=root, background=fg)
+placeholder = Label(master=root, background=bg)
 title = Label(text="Welkom bij NS", foreground="#002272", background=bg, font=('Helvetica', 22, 'bold'))
-panel = Label(root, image = img, background=bg)
+panel = Label(root, image=img, background=bg)
 
 # function that opens the search GUI
 def command():
