@@ -143,7 +143,7 @@ def command():
     entry_from.insert(END, 'Alphen a/d Rijn')
     entry_from['values'] = stations
 
-    homebtn = Button(top, text="terug", font=('Helvetica'), command=showhome)
+    homebtn = Button(top, text="Terug", font=('Helvetica',10), command=showhome)
     from_text = Label(top, text="van", foreground=fg, background=bg, font=('Helvetica'))
 
     # create entry_to field and dropdown menu
