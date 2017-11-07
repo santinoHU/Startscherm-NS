@@ -8,17 +8,35 @@ import requests
 import webbrowser
 import xmltodict
 
+
+
+def check_route_stations(vertrek, eind, stations):
+    if vertrek not in stations:
+        messagebox.showinfo("Error", "Het vertrekstation bestaat niet")
+        return False
+    if eind not in stations:
+        messagebox.showinfo("Error", "Het eindstation bestaat niet")
+        return False
+    if vertrek == eind:
+        messagebox.showinfo("Error", "U kunt niet naar hetzelfde station reizen")
+        return False
+
+
 # all stations to a tuple
 def allstations():
     stationlist = []
     stations_url = "http://webservices.ns.nl/ns-api-stations"
+
+    # get response and decode it UTF-8
     response = requests.get(stations_url, auth=auth_details)
+    response.encoding = 'UTF-8'
+
     stationsXML = xmltodict.parse(response.text)
     for station in stationsXML['stations']['station']:
         stationlist.append(station['name'])
     return tuple(stationlist)
 
-
+  
 # Opens webpage
 def callback():
     webbrowser.open_new(r"https://www.ns.nl")
@@ -34,7 +52,7 @@ fg = "#013097" # blue
 # creates home GUI
 root = Tk()
 root.configure(background=bg)
-root.geometry("450x550")
+root.geometry("900x550")
 root.resizable(width=False, height=False)
 root.title("Welkom bij de NS")
 
@@ -57,14 +75,13 @@ def command():
     # create search GUI
     top = Toplevel(root)
     top.configure(background=bg)
-    top.geometry("450x550")
+    top.geometry("900x550")
     top.resizable(width=False, height=False)
     top.title("Plan uw reis")
-
     root.withdraw()
 
-    # creates textbox for results
-    results = Text(top, background=bg, foreground=fg, font=("bold", 10), wrap=NONE, padx=5, pady=5)
+    # create textbox for results
+    results = Text(top, background=bg, foreground=fg, font=('Consolas', 8), padx=5, pady=5,)
 
     # checks stationinfo results
     def stationinfo():
@@ -78,13 +95,20 @@ def command():
         if search_url == 'http://webservices.ns.nl/ns-api-avt?station=':
             search_url = 'http://webservices.ns.nl/ns-api-avt?station=alphen'
 
+        # get response and decode it UTF-8
         response = requests.get(search_url, auth=auth_details)
+        response.encoding = 'UTF-8'
+        
         departureXML = xmltodict.parse(response.text)
 
         # checks if station is foreign
         try:
             if departureXML['error']['message'] == 'Foreign stations are not supported.':
                 messagebox.showinfo("Error", "Buitenlandse stations kunt u hiervoor niet gebruiken.")
+                return
+            elif vertrekXML['error']['message'].startswith("Error while trying to get departure information for station"):
+                messagebox.showinfo("Error", "Op het moment kunnen wij niet de data van NS verkrijgen.\n"
+                                             "probeer later nog eens!")
                 return
         except:
             pass
@@ -106,31 +130,90 @@ def command():
 
     # checks route information results
     def routeinformation():
+        # Variable for mention check
+        eerstemelding = True
+
         # deletes text box before putting in some other text
         results.delete('0.0', END)
 
         # check if both fields are filled in
         if entry_from.get() is "":
-            messagebox.showinfo("Error", "Zorg ervoor dat het beginstation is ingevuld.")
+            messagebox.showinfo("Error", "Zorg ervoor dat het beginstation is ingevuld")
             return
         if entry_to.get() is "":
-            messagebox.showinfo("Error", "Zorg ervoor dat het eindstation is ingevuld.")
+            messagebox.showinfo("Error", "Zorg ervoor dat het eindstation is ingevuld")
             return
 
         # getting formatted entries from the comboboxes
         departure = 'fromStation=' + str(entry_from.get()).replace(' ', '+')
         eindstation = 'toStation=' + str(entry_to.get()).replace(' ', '+')
 
-        search_url = api_url_route + departure + '&' + eindstation
-        # sets the default to Alphen if there is no input
-        if search_url == 'http://webservices.ns.nl/ns-api-treinplanner?':
-            search_url = 'http://webservices.ns.nl/ns-api-treinplanner?fromStation=Utrecht+Centraal&toStation=Woerden'
-        response = requests.get(search_url, auth=auth_details)
-        departureXML = xmltodict.parse(response.text)
-        print(departureXML)
+        # checks if is input is valid
+        if check_route_stations(entry_from.get(), entry_to.get(), stations) == False:
+            return
 
-        for train in departureXML['ReisMogelijkheden']['ReisMogelijkheid']:
-            print(train)
+        search_url = api_url_route + vertrekstation + '&' + eindstation
+        # sets the default to alphen if there is no input
+        if search_url == 'http://webservices.ns.nl/ns-api-treinplanner?':
+            search_url = 'http://webservices.ns.nl/ns-api-treinplanner?fromStation=Utrecht+Centraal&toStation=Wierden'
+
+        # get response and decode it UTF-8
+        response = requests.get(search_url, auth=auth_details)
+        response.encoding = 'UTF-8'
+
+        vertrekXML = xmltodict.parse(response.text)
+
+        # checks if route is possible
+        if vertrekXML['ReisMogelijkheden'] is None:
+            messagebox.showinfo("Error", "Deze reis is niet mogelijk probeer andere stations")
+            return
+
+        # make a table to display
+        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^11s}|{:^10s}|{:^10s}|{:^15}\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Aankomsttijd", "Reistijd", "Optimaal", "Status"))
+
+        for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
+            melding = False
+
+            # assigns variables when there is a adjusted schedule
+            try:
+                id = vertrek['Melding']['Id']
+                ernstig = vertrek['Melding']['Ernstig']
+                text = vertrek['Melding']['Text']
+                melding = True
+            except:
+                pass
+
+            try:
+                aantaloverstappen = vertrek['AantalOverstappen']
+                geplandereistijd = vertrek['GeplandeReisTijd']  # 11:05
+                actuelereistijd = vertrek['ActueleReisTijd']  # 11:05
+                optimaal = vertrek['Optimaal']
+                geplandevertrektijd = vertrek['GeplandeVertrekTijd']  # 2016-09-27T18:36:00+0200
+                actuelevertrektijd = vertrek['ActueleVertrekTijd']  # 2016-09-27T18:36:00+0200
+                geplandeaankomsttijd = vertrek['GeplandeAankomstTijd']  # 2016-09-27T18:36:00+0200
+                actueleaankomsttijd = vertrek['ActueleAankomstTijd']  # 2016-09-27T18:36:00+0200
+                status = vertrek['Status']
+
+                f_actuelevertrektijd = actuelevertrektijd[5:10] + ":" + actuelevertrektijd[11:16]
+                f_actueleaankomsttijd = actueleaankomsttijd[5:10] + ":" + actueleaankomsttijd[11:16]
+
+            except:
+                print("Exception raised when assiging routeinformation variables")
+
+            # if there is an change in route there will be a message, END to reverse the order
+            if melding:
+                if eerstemelding:
+                    messagebox.showinfo("PAS OP!", "Er is een melding op dit traject\n" + text)
+                    eerstemelding = False
+                if ernstig:
+                    results.insert(END, "PAS OP! De volgende reis heeft een melding (Het is ernstig): " + text + "\n")
+                else:
+                    results.insert(END, "PAS OP! De volgende reis heeft een melding: " + text + "\n")
+
+            # Handling output. The headers are handled outside the for loop, END to reverse the order
+            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^11s} |{:^10s}|{:^10s}|{:^15}\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), f_actueleaankomsttijd, actuelereistijd, optimaal, status))
+
+            results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
 
 
     def showhome():
@@ -174,12 +257,12 @@ def command():
 # shows variables on the GUI
 title.pack(pady=20)
 panel.pack(padx=10)
-placeholder.pack(side=LEFT, padx=20)
-searchbtn = Button(master = root, text="Reis \nplannen", foreground="white", background=fg, command=command).pack(side=LEFT, padx=5, pady=80)
+placeholder.pack(side=LEFT, padx=140)
+searchbtn = Button(master=root, text="Reis \nplannen", foreground="white", background=fg, command=command).pack(side=LEFT, padx=5, pady=80)
 ticketbtn.pack(side=LEFT, padx=5, pady=80)
 cardbtn.pack(side=LEFT, padx=5, pady=80)
 abroadbtn.pack(side=LEFT, padx=5, pady=80)
-footer.place(x=0, y=530, width=650)
+footer.place(x=0, y=530, width=root.winfo_screenwidth())
 
 # open GUI
 root.mainloop()
