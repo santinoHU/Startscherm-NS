@@ -139,7 +139,7 @@ def command():
 
 
     # create field, dropdown menu and default value
-    entry_from = tkk.Combobox(top)
+    entry_from = tkk.Combobox(top, width=30)
     entry_from.insert(END, 'Alphen a/d Rijn')
     entry_from['values'] = stations
 
@@ -147,7 +147,7 @@ def command():
     from_text = Label(top, text="van", foreground=fg, background=bg, font=('Helvetica'))
 
     # create entry_to field and dropdown menu
-    entry_to = tkk.Combobox(top)
+    entry_to = tkk.Combobox(top, width=30)
     entry_to['values'] = stations
 
     to_text = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica'))
