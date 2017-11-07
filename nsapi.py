@@ -106,7 +106,7 @@ def command():
             if departureXML['error']['message'] == 'Foreign stations are not supported.':
                 messagebox.showinfo("Error", "Buitenlandse stations kunt u hiervoor niet gebruiken.")
                 return
-            elif vertrekXML['error']['message'].startswith("Error while trying to get departure information for station"):
+            elif departureXML['error']['message'].startswith("Error while trying to get departure information for station"):
                 messagebox.showinfo("Error", "Op het moment kunnen wij niet de data van NS verkrijgen.\n"
                                              "probeer later nog eens!")
                 return
@@ -146,13 +146,13 @@ def command():
 
         # getting formatted entries from the comboboxes
         departure = 'fromStation=' + str(entry_from.get()).replace(' ', '+')
-        eindstation = 'toStation=' + str(entry_to.get()).replace(' ', '+')
+        destination = 'toStation=' + str(entry_to.get()).replace(' ', '+')
 
         # checks if is input is valid
         if check_route_stations(entry_from.get(), entry_to.get(), stations) == False:
             return
 
-        search_url = api_url_route + vertrekstation + '&' + eindstation
+        search_url = api_url_route + departure + '&' + destination
         # sets the default to alphen if there is no input
         if search_url == 'http://webservices.ns.nl/ns-api-treinplanner?':
             search_url = 'http://webservices.ns.nl/ns-api-treinplanner?fromStation=Utrecht+Centraal&toStation=Wierden'
