@@ -241,7 +241,7 @@ def command():
     title = Label(top, text="Welkom bij NS", foreground=fg, background=bg, font=('Helvetica', 22, 'bold'))
 
     # prints the variables to the GUI
-    homebtn.pack(padx=(0,393), pady=(7,0))
+    homebtn.pack(padx=(0,843), pady=(7,0))
     title.pack(pady=(20,0)) # pady works as a tuple: (top, bottom)
     currentbtn.pack(pady=(10,0))
     description.pack(pady=(10,0))
