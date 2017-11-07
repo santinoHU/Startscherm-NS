@@ -2,8 +2,26 @@
 import requests
 import xmltodict
 from tkinter import *
+from tkinter import messagebox
+import tkinter.ttk as tkk
 from PIL import ImageTk, Image
 from auth import *
+
+
+# all stations to a tuple
+def allstations():
+    stationlist = []
+    stations_url = "http://webservices.ns.nl/ns-api-stations"
+    response = requests.get(stations_url, auth=auth_details)
+    stationsXML = xmltodict.parse(response.text)
+    for station in stationsXML['stations']['station']:
+        stationlist.append(station['name'])
+    return tuple(stationlist)
+
+
+# all NS staions
+stations = allstations()
+
 
 # assign color variables
 bg = "#FFD723" # yellow
@@ -44,59 +62,127 @@ def command():
     root.withdraw()
     top.deiconify()
 
-    # function to check search results
-    def search():
-        search_url = api_url + entry_from.get()
+    # create textbox for results
+    results = Text(top, background=bg, foreground=fg, font=("bold", 10), wrap=NONE, padx=5, pady=5)
+
+    # function to check stationinformation results
+    def stationsinformatie():
+        # deletes text box before putting in some other text
+        results.delete('0.0', END)
+
+        # getting formatted entry from the combobox
+        vertrekstation = str(entry_from.get()).replace(' ', '+')
+
+
+        search_url = api_url_station + vertrekstation
+        print(search_url)
         # sets the default to alphen if there is no input
         if search_url == 'http://webservices.ns.nl/ns-api-avt?station=':
             search_url = 'http://webservices.ns.nl/ns-api-avt?station=alphen'
-        response = requests.get(search_url, auth=auth_details)
-        # returns search-information
-        vertrekXML = xmltodict.parse(response.text)
-        count = 0
-        # subtitle.pack(pady=(20, 0))
-        for vertrek in vertrekXML['ActueleVertrekTijden']['VertrekkendeTrein']:
-            # displays a maximum of 10 trains on the screen
-            if count <= 9:
-                eindbestemming = vertrek['EindBestemming']
-                vertrektijd = vertrek['VertrekTijd']  # 2016-09-27T18:36:00+0200
-                vertrektijd = vertrektijd[11:16]  # 18:36
-                vertrekspoor = vertrek['VertrekSpoor'] # returns ordered dict
-                trein = vertrek['TreinSoort']
-                results = Label(top, text="", background=bg, foreground=fg, font=("bold"))
-                # if entry_to.get() in eindbestemming.lower() and opmerking != "":
-                #     results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + opmerking
-                #     results.pack()
-                # el
-                if entry_to.get() in eindbestemming.lower():
-                    results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + " vanaf spoor " + vertrekspoor['#text']
-                    if vertrekspoor["@wijziging"] == 'true':
-                        results["text"] = "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + \
-                                          vertrekspoor['#text'] + "\n !Let op: Spoorswijziging"
 
-                    results.pack()
-                count += 1
+        response = requests.get(search_url, auth=auth_details)
+        vertrekXML = xmltodict.parse(response.text)
+
+        # checks if station is foreign
+        try:
+            if vertrekXML['error']['message'] == 'Foreign stations are not supported.':
+                messagebox.showinfo("Error", "Buitenlandse stations kunt u hiervoor niet gebruiken.")
+                return
+        except:
+            pass
+
+        for vertrek in vertrekXML['ActueleVertrekTijden']['VertrekkendeTrein']:
+            eindbestemming = vertrek['EindBestemming']
+            vertrektijd = vertrek['VertrekTijd']  # 2016-09-27T18:36:00+0200
+            vertrektijd = vertrektijd[11:16]  # 18:36
+            vertrekspoor = vertrek['VertrekSpoor']  # returns ordered dict
+            trein = vertrek['TreinSoort']
+
+            if vertrekspoor["@wijziging"] == 'true':
+                results.insert(0.0, "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + vertrekspoor['#text'] + "\n !Let op: Spoorswijziging")
+            else:
+                results.insert(0.0, "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + " vanaf spoor " + vertrekspoor['#text'] + "\n")
+
+            results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
+
+
+    # function to check route information results
+    def routeinformatie():
+        # deletes text box before putting in some other text
+        results.delete('0.0', END)
+
+        # check if both fields are filled in
+        if entry_from.get() is "":
+            messagebox.showinfo("Error", "Zorg ervoor dat het beginstation is ingevuld.")
+            return
+        if entry_to.get() is "":
+            messagebox.showinfo("Error", "Zorg ervoor dat het eindstation is ingevuld.")
+            return
+
+
+        # getting formatted entries from the comboboxes
+        vertrekstation = 'fromStation=' + str(entry_from.get()).replace(' ', '+')
+        eindstation = 'toStation=' + str(entry_to.get()).replace(' ', '+')
+
+
+        search_url = api_url_route + vertrekstation + '&' + eindstation
+        # sets the default to alphen if there is no input
+        if search_url == 'http://webservices.ns.nl/ns-api-treinplanner?':
+            search_url = 'http://webservices.ns.nl/ns-api-treinplanner?fromStation=Utrecht+Centraal&toStation=Wierden'
+        response = requests.get(search_url, auth=auth_details)
+        vertrekXML = xmltodict.parse(response.text)
+        print(vertrekXML)
+
+
+        for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
+            print(vertrek)
+
+
+            # eindbestemming = vertrek['EindBestemming']
+            # vertrektijd = vertrek['VertrekTijd']  # 2016-09-27T18:36:00+0200
+            # vertrektijd = vertrektijd[11:16]  # 18:36
+            # vertrekspoor = vertrek['VertrekSpoor']  # returns ordered dict
+            # trein = vertrek['TreinSoort']
+            #
+            # if entry_to.get() in eindbestemming.lower() and count <= 9:
+            #     count += 1
+            #     results.insert(0.0, "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + " vanaf spoor " + vertrekspoor['#text'] + "\n")
+            #     if vertrekspoor["@wijziging"] == 'true':
+            #         results.insert(0.0, "Om " + vertrektijd + " vertrekt de " + trein + " naar " + eindbestemming + vertrekspoor['#text'] + "\n !Let op: Spoorswijziging")
+            #
+            # results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
+
+
+
 
     def showhome():
         root.deiconify()
         top.withdraw()
 
     # assign variables
-    entry_from = Entry(top)
-    backbttn = Button(top, text="Home", command=showhome)
+
+    # create entry_from field, dropdown menu and default value
+    entry_from = tkk.Combobox(top)
+    entry_from.insert(END, 'Alphen a/d Rijn')
+    entry_from['values'] = stations
+
+    backbttn = Button(top, text="home", font=('Helvetica'), command=showhome)
     from_txt = Label(top, text="van*", foreground=fg, background=bg, font=('Helvetica'))
-    entry_to = Entry(top)
+
+    # create entry_to field and dropdown menu
+    entry_to = tkk.Combobox(top)
+    entry_to['values'] = stations
+
     to_txt = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica'))
     description = Label(top, text="Of zoek uw reis handmatig:", foreground=fg, background=bg, font=('Helvetica'))
     footer2 = Label(master=top, background=fg)
-    searchbttn = Button(top, text="Zoeken", command=search)
-    currentbttn = Button(top, text="Huidige stationsinformatie", command=search)
+    currentbttn = Button(top, text="Huidige stationsinformatie", command=stationsinformatie)
+    searchbttn = Button(top, text="Traject informatie", command=routeinformatie)
     title = Label(top, text="Welkom bij NS", foreground=fg, background=bg, font=('Helvetica', 22, 'bold'))
-    # subtitle = Label(top, text="Dit zijn de vertrekkende treinen:\n", foreground=fg, background=bg, font=('Helvetica'))
 
     # prints the variables to the GUI
+    backbttn.pack()
     title.pack(pady=(20,0)) # pady works as a tuple: (top, bottom)
-    backbttn.pack(pady=(20,0))
     currentbttn.pack(pady=(10,0))
     description.pack(pady=(10,0))
     from_txt.pack()
