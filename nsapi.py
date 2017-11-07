@@ -80,7 +80,7 @@ def command():
     top.deiconify()
 
     # create textbox for results
-    results = Text(top, background=bg, foreground=fg, font=("bold", 10), wrap=NONE, padx=5, pady=5)
+    results = Text(top, background=bg, foreground=fg, font=('Consolas', 8), padx=5, pady=5,)
 
     # function to check stationinformation results
     def stationsinformatie():
@@ -132,6 +132,9 @@ def command():
 
     # function to check route information results
     def routeinformatie():
+        # Variable for mention check
+        eerstemelding = True
+
         # deletes text box before putting in some other text
         results.delete('0.0', END)
 
@@ -165,17 +168,16 @@ def command():
 
         vertrekXML = xmltodict.parse(response.text)
 
-        # make a table to display
-        results.insert(0.0, "{:25} {:21} {:25} {:21} \n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Aankomsttijd"))
 
         # checks if route is possible
         if vertrekXML['ReisMogelijkheden'] is None:
             messagebox.showinfo("Error", "Deze reis is niet mogelijk probeer andere stations")
             return
 
+        # make a table to display
+        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^11s}|{:^10s}|{:^10s}|{:^15}\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Aankomsttijd", "Reistijd", "Optimaal", "Status"))
 
         for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
-            print(vertrek)
             melding = False
 
             # assigns variables when there is a adjusted schedule
@@ -185,35 +187,45 @@ def command():
                 text = vertrek['Melding']['Text']
                 melding = True
             except:
-                print("Exception raised when assiging routeinformation variables")
+                pass
 
             try:
                 aantaloverstappen = vertrek['AantalOverstappen']
-                geplandereistijd = vertrek['GeplandeReisTijd']  # 2016-09-27T18:36:00+0200
-                actuelereistijd = vertrek['ActueleReisTijd']  # 2016-09-27T18:36:00+0200
+                geplandereistijd = vertrek['GeplandeReisTijd']  # 11:05
+                actuelereistijd = vertrek['ActueleReisTijd']  # 11:05
                 optimaal = vertrek['Optimaal']
                 geplandevertrektijd = vertrek['GeplandeVertrekTijd']  # 2016-09-27T18:36:00+0200
                 actuelevertrektijd = vertrek['ActueleVertrekTijd']  # 2016-09-27T18:36:00+0200
                 geplandeaankomsttijd = vertrek['GeplandeAankomstTijd']  # 2016-09-27T18:36:00+0200
                 actueleaankomsttijd = vertrek['ActueleAankomstTijd']  # 2016-09-27T18:36:00+0200
                 status = vertrek['Status']
+
+                f_actuelevertrektijd = actuelevertrektijd[5:10] + ":" + actuelevertrektijd[11:16]
+                f_actueleaankomsttijd = actueleaankomsttijd[5:10] + ":" + actueleaankomsttijd[11:16]
+
             except:
                 print("Exception raised when assiging routeinformation variables")
 
-            if melding == True:
-                results.insert(END, "PAS OP! De volgende reis heeft een melding: " + text + "\n")
-            results.insert(END, "{:24} {:5} {:8} {:4} {:24} {:5} {:8} {:4} \n".format(entry_from.get() , actuelevertrektijd[5:10], actuelevertrektijd[11:16], "|", entry_to.get(), actueleaankomsttijd[5:10], actueleaankomsttijd[11:16]))
+            # if there is an change in route there will be a message, END to reverse the order
+            if melding:
+                if eerstemelding:
+                    messagebox.showinfo("PAS OP!", "Er is een melding op dit traject\n" + text)
+                    eerstemelding = False
+                if ernstig:
+                    results.insert(END, "PAS OP! De volgende reis heeft een melding (Het is ernstig): " + text + "\n")
+                else:
+                    results.insert(END, "PAS OP! De volgende reis heeft een melding: " + text + "\n")
+
+            # Handling output. The headers are handled outside the for loop, END to reverse the order
+            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^11s} |{:^10s}|{:^10s}|{:^15}\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), f_actueleaankomsttijd, actuelereistijd, optimaal, status))
 
             results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
-
-
 
 
     def showhome():
         root.deiconify()
         top.withdraw()
 
-    # assign variables
 
     # create entry_from field, dropdown menu and default value
     entry_from = tkk.Combobox(top)
