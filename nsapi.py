@@ -193,7 +193,8 @@ def command():
             return
 
         # make a table to display
-        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Optimaal", "Status", "Overstapspoor"))
+        results.insert(CURRENT, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Optimaal", "Status", "Overstapspoor"))
+        results.insert(CURRENT, "-"*163 + "\n")
 
         for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
             melding = False
