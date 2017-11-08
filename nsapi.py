@@ -9,7 +9,6 @@ import webbrowser
 import xmltodict
 
 
-
 def check_route_stations(vertrek, eind, stations):
     if vertrek not in stations:
         messagebox.showinfo("Error", "Het vertrekstation bestaat niet")
@@ -41,13 +40,19 @@ def allstations():
 def callback():
     webbrowser.open_new(r"https://www.ns.nl")
 
+
 def getrails(stationlist):
     try:
         for station in stationlist['ReisDeel']:
+            print(station)
             for s in station['ReisStop']:
-                return s['Spoor']['#text']
-    except:
-        pass
+                print(s)
+                spoor = s['Spoor']
+                print(spoor)
+                return spoor['#text']
+    except Exception as e:
+        print(e)
+        return '-'
 
 
 # all NS staions
@@ -88,12 +93,14 @@ def command():
     top.title("Plan uw reis")
     root.withdraw()
 
-    # create textbox for results
-    results = Text(top, background=bg, foreground=fg, font=('Consolas', 8), wrap=NONE, padx=5, pady=5)
-    scrollresulty = Scrollbar(results, command=results.yview, cursor="hand2")
-    scrollresultx = Scrollbar(results, orient=HORIZONTAL, command=results.xview, cursor="hand2")
-    results['yscroll'] = scrollresulty.set
+    txtframe = Frame(top, background=bg, padx=5, pady=5)
+    results = Text(txtframe, background=bg, foreground=fg, font=('Consolas', 8), wrap=NONE, relief=FLAT)
+    scrollresulty = Scrollbar(txtframe, command=results.yview, cursor="hand2")
+    scrollresultx = Scrollbar(txtframe, orient=HORIZONTAL, command=results.xview, cursor="hand2")
+
     results['xscroll'] = scrollresultx.set
+    results['yscroll'] = scrollresulty.set
+
     scrollresulty.pack(side=RIGHT, fill=Y)
     scrollresultx.pack(side=BOTTOM, fill=X)
 
@@ -136,10 +143,12 @@ def command():
             type = train['TreinSoort']
 
             if tracknr["@wijziging"] == 'true':
-                results.insert(0.0, "Om " + departuretime + " vertrekt de " + type + " naar " + destination + tracknr['#text'] + "\n !Let op: Spoorswijziging")
+                results.insert(END, "Om " + departuretime + " vertrekt de " + type + " naar " + destination + tracknr['#text'] + "\n !Let op: Spoorswijziging")
             else:
-                results.insert(0.0, "Om " + departuretime + " vertrekt de " + type + " naar " + destination + " vanaf spoor " + tracknr['#text'] + "\n")
+                results.insert(END, "Om " + departuretime + " vertrekt de " + type + " naar " + destination + " vanaf spoor " + tracknr['#text'] + "\n")
 
+            # display textbox
+            txtframe.pack(side=BOTTOM, fill=X)
             results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
 
 
@@ -184,7 +193,7 @@ def command():
             return
 
         # make a table to display
-        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Optimaal", "Status", "Spoor"))
+        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Optimaal", "Status", "Overstapspoor"))
 
         for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
             melding = False
@@ -208,7 +217,7 @@ def command():
                 geplandeaankomsttijd = vertrek['GeplandeAankomstTijd']  # 2016-09-27T18:36:00+0200
                 actueleaankomsttijd = vertrek['ActueleAankomstTijd']  # 2016-09-27T18:36:00+0200
                 status = vertrek['Status']
-                spoor = getrails(vertrek)
+                overstapspoor = getrails(vertrek)
 
                 f_actuelevertrektijd = actuelevertrektijd[5:10] + ":" + actuelevertrektijd[11:16]
                 f_actueleaankomsttijd = actueleaankomsttijd[5:10] + ":" + actueleaankomsttijd[11:16]
@@ -229,8 +238,10 @@ def command():
                     results.insert(END, "PAS OP! De volgende reis heeft een melding: " + text + "\n")
 
             # Handling output. The headers are handled outside the for loop, END to reverse the order
-            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s} |{:^10s}|{:^10s}|{:^15}|{:^15}\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), aantaloverstappen, f_actueleaankomsttijd, actuelereistijd, optimaal, status, spoor))
+            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s} |{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), aantaloverstappen, f_actueleaankomsttijd, actuelereistijd, optimaal, status, overstapspoor))
 
+            # display textbox
+            txtframe.pack(side=BOTTOM, fill=X)
             results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
 
     def showhome():
@@ -238,18 +249,19 @@ def command():
         top.withdraw()
 
 
-    # create field, dropdown menu and default value
     entry_from = tkk.Combobox(top, width=30)
     entry_from.insert(END, 'Alphen a/d Rijn')
     entry_from['values'] = stations
 
-    homebtn = Button(top, text="Terug", font=('Helvetica',10), command=showhome)
+    homebtn = Button(top, text="Terug", font=('Helvetica', 10), command=showhome)
     from_text = Label(top, text="van", foreground=fg, background=bg, font=('Helvetica'))
 
     # create entry_to field and dropdown menu
     entry_to = tkk.Combobox(top, width=30)
     entry_to['values'] = stations
 
+
+    # create field, dropdown menu and default value
     to_text = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica'))
     description = Label(top, text="Of zoek uw reis handmatig:", foreground=fg, background=bg, font=('Helvetica'))
     footer = Label(master=top, background=fg)
@@ -258,7 +270,7 @@ def command():
     title = Label(top, text="Welkom bij NS", foreground=fg, background=bg, font=('Helvetica', 22, 'bold'))
 
     # prints the variables to the GUI
-    homebtn.pack(padx=(0,843), pady=(7,0))
+    homebtn.pack(padx=(0, 843), pady=(7,0))
     title.pack(pady=(20,0)) # pady works as a tuple: (top, bottom)
     currentbtn.pack(pady=(10,0))
     description.pack(pady=(10,0))
