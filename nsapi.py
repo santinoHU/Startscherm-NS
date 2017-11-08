@@ -1,12 +1,28 @@
+"""
+This project is made by:
+    - Santino den Brave
+    - Lucas van den Berg
+    - Paul kuster
+    - Youri Okkerse
+    - Nicky Schoenmakers
+    - Youri Mulder
+
+    Don't forget to visit the NS site: https://www.ns.nl/reisinformatie/ns-api
+"""
+
+
+
 # import modules
-from auth import *
 from tkinter import *
 from PIL import ImageTk, Image
 from tkinter import messagebox
 import tkinter.ttk as tkk
 import requests
-import webbrowser
 import xmltodict
+
+# import our own files
+from auth import *
+from callback import *
 
 
 def check_route_stations(vertrek, eind, stations):
@@ -35,24 +51,57 @@ def allstations():
         stationlist.append(station['name'])
     return tuple(stationlist)
 
-  
-# Opens webpage
-def callback():
-    webbrowser.open_new(r"https://www.ns.nl")
-
-
+# disabled the exception messages to keep the console clean
 def getrails(stationlist):
+    # deze lijst wordt gevuld met de sporen
+    allstationrails = []
+    global station
+
+    # try catch for the whole function
     try:
-        for station in stationlist['ReisDeel']:
-            print(station)
-            for s in station['ReisStop']:
-                print(s)
-                spoor = s['Spoor']
-                print(spoor)
-                return spoor['#text']
+        # tries to get the rails without a double for loop
+        try:
+            station = stationlist['ReisDeel']['ReisStop']
+            for s in station:
+                try:
+                    spoor = s['Spoor']['#text']
+                    # als er een spoor in het XML bestand staat return het
+                    if spoor == '#text':
+                        pass
+                    if spoor == 'Spoor':
+                        allstationrails.append('- ')
+                    else:
+                        allstationrails.append(spoor + " ")
+                except Exception as e:
+                    pass
+                    # print("getrails try 1.1:", e)
+        except Exception as e:
+            pass
+            # print("getrails try 1:", e)
+
+        # tries to get the rails with a double for loop
+        try:
+            for station in stationlist['ReisDeel']:
+                for s in station['ReisStop']:
+                    try:
+                        spoor = s['Spoor']['#text']
+                        # als er een spoor in het XML bestand staat return het
+                        if spoor == '#text':
+                            pass
+                        if spoor == 'Spoor':
+                            allstationrails.append('- ')
+                        else:
+                            allstationrails.append(spoor + " ")
+                    except Exception as e:
+                        pass
+                        # print("getrails try 2.1:", e)
+        except Exception as e:
+            pass
+            # print("getrails try 2:", e)
     except Exception as e:
-        print(e)
-        return '-'
+        pass
+        # print(e)
+    return allstationrails
 
 
 # all NS staions
@@ -70,9 +119,9 @@ root.resizable(width=False, height=False)
 root.title("Welkom bij de NS")
 
 # assign buttons
-abroadbtn = Button(master = root, text="Ik wil naar \n het buitenland", foreground="white", background=fg, command=callback)
-cardbtn = Button(master = root, text="OV-Chipkaart \n opladen", foreground="white", background=fg, command=callback)
-ticketbtn = Button(master = root, text="Kopen \n los kaartje", foreground="white", background=fg, command=callback)
+abroadbtn = Button(master = root, text="Ik wil naar \n het buitenland", foreground="white", background=fg, command=callbackabroad)
+cardbtn = Button(master = root, text="OV-Chipkaart \n opladen", foreground="white", background=fg, command=callbackcharge)
+ticketbtn = Button(master = root, text="Kopen \n los kaartje", foreground="white", background=fg, command=callbacktickets)
 
 # assign image
 nsimg = ImageTk.PhotoImage(Image.open("img/ns_img.png"))
@@ -120,7 +169,7 @@ def command():
         # get response and decode it UTF-8
         response = requests.get(search_url, auth=auth_details)
         response.encoding = 'UTF-8'
-        
+
         departureXML = xmltodict.parse(response.text)
 
         # checks if station is foreign
@@ -132,7 +181,8 @@ def command():
                 messagebox.showinfo("Error", "Op het moment kunnen wij niet de data van NS verkrijgen.\n"
                                              "probeer later nog eens!")
                 return
-        except:
+        except Exception as e:
+            # print("XML mention check:", e)
             pass
 
         for train in departureXML['ActueleVertrekTijden']['VertrekkendeTrein']:
@@ -169,11 +219,14 @@ def command():
             return
 
         # getting formatted entries from the comboboxes
-        departure = 'fromStation=' + str(entry_from.get()).replace(' ', '+')
-        destination = 'toStation=' + str(entry_to.get()).replace(' ', '+')
+        start = entry_from.get()
+        end = entry_to.get()
+        departure = 'fromStation=' + str(start).replace(' ', '+')
+        destination = 'toStation=' + str(end).replace(' ', '+')
+        print(destination)
 
         # checks if is input is valid
-        if check_route_stations(entry_from.get(), entry_to.get(), stations) == False:
+        if check_route_stations(start, end, stations) == False:
             return
 
         search_url = api_url_route + departure + '&' + destination
@@ -192,9 +245,6 @@ def command():
             messagebox.showinfo("Error", "Deze reis is niet mogelijk probeer andere stations")
             return
 
-        # make a table to display
-        results.insert(CURRENT, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Optimaal", "Status", "Overstapspoor"))
-        results.insert(CURRENT, "-"*163 + "\n")
 
         for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
             melding = False
@@ -205,7 +255,10 @@ def command():
                 ernstig = vertrek['Melding']['Ernstig']
                 text = vertrek['Melding']['Text']
                 melding = True
-            except:
+
+            # exception raised when there isn't mention on the track
+            except Exception as e:
+                # print("NS mention variables", e)
                 pass
 
             try:
@@ -218,15 +271,30 @@ def command():
                 geplandeaankomsttijd = vertrek['GeplandeAankomstTijd']  # 2016-09-27T18:36:00+0200
                 actueleaankomsttijd = vertrek['ActueleAankomstTijd']  # 2016-09-27T18:36:00+0200
                 status = vertrek['Status']
-                overstapspoor = getrails(vertrek)
 
+                # formats the time of departure and destination
                 f_actuelevertrektijd = actuelevertrektijd[5:10] + ":" + actuelevertrektijd[11:16]
                 f_actueleaankomsttijd = actueleaankomsttijd[5:10] + ":" + actueleaankomsttijd[11:16]
-
-
-
-            except:
+            except Exception as e:
+                print(e)
                 print("Exception raised when assiging routeinformation variables")
+
+            try:
+                # created the departure and destination variables
+                sporen = getrails(vertrek)
+                opstapsporen = ['    ']  # the spaces are there make it look nice in the output
+                afstapsporen = ['    ']  # the spaces are there make it look nice in the output
+
+                # checks if passenger should get in or out the train
+                for i in range(len(sporen)):
+                    if i % 2 == 0:
+                        opstapsporen.append(sporen[i])
+                    else:
+                        afstapsporen.append(sporen[i])
+            except Exception as e:
+                print(e)
+                print("Exception raised when trying to handling rails")
+
 
             # if there is an change in route there will be a message, END to reverse the order
             if melding:
@@ -238,12 +306,20 @@ def command():
                 else:
                     results.insert(END, "PAS OP! De volgende reis heeft een melding: " + text + "\n")
 
+
+            result = "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s} |{:^10s}|{:^15}|{:<15}|{:<15}|\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), aantaloverstappen, f_actueleaankomsttijd, actuelereistijd, status, ''.join(opstapsporen), ''.join(afstapsporen))
+
             # Handling output. The headers are handled outside the for loop, END to reverse the order
-            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s} |{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), aantaloverstappen, f_actueleaankomsttijd, actuelereistijd, optimaal, status, overstapspoor))
+            results.insert(END, result)
 
             # display textbox
             txtframe.pack(side=BOTTOM, fill=X)
             results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
+
+        # make a table to display
+        results.insert(1.0,"{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^15}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Status", "Opstapsporen", "Afstapsporen"))
+        # creates line between results and the header
+        results.insert(2.0, '-' * len(result) +"\n")
 
     def showhome():
         root.deiconify()
@@ -255,7 +331,7 @@ def command():
     entry_from['values'] = stations
 
     homebtn = Button(top, text="Terug", font=('Helvetica', 10), command=showhome)
-    from_text = Label(top, text="van", foreground=fg, background=bg, font=('Helvetica'))
+    from_text = Label(top, text="van", foreground=fg, background=bg, font=('Helvetica', 12, 'bold'))
 
     # create entry_to field and dropdown menu
     entry_to = tkk.Combobox(top, width=30)
@@ -263,8 +339,8 @@ def command():
 
 
     # create field, dropdown menu and default value
-    to_text = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica'))
-    description = Label(top, text="Of zoek uw reis handmatig:", foreground=fg, background=bg, font=('Helvetica'))
+    to_text = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica', 12, 'bold'))
+    description = Label(top, text="Of zoek uw reis handmatig:", foreground=fg, background=bg, font=('Helvetica', 12, 'bold'))
     footer = Label(master=top, background=fg)
     currentbtn = Button(top, text="Huidige stationsinformatie", command=stationinfo)
     searchbtn = Button(top, text="Traject informatie", command=routeinformation)
