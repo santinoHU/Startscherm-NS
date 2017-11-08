@@ -41,6 +41,14 @@ def allstations():
 def callback():
     webbrowser.open_new(r"https://www.ns.nl")
 
+def getrails(stationlist):
+    try:
+        for station in stationlist['ReisDeel']:
+            for s in station['ReisStop']:
+                return s['Spoor']['#text']
+    except:
+        pass
+
 
 # all NS staions
 stations = allstations()
@@ -81,7 +89,14 @@ def command():
     root.withdraw()
 
     # create textbox for results
-    results = Text(top, background=bg, foreground=fg, font=('Consolas', 8), padx=5, pady=5,)
+    results = Text(top, background=bg, foreground=fg, font=('Consolas', 8), wrap=NONE, padx=5, pady=5)
+    scrollresulty = Scrollbar(results, command=results.yview, cursor="hand2")
+    scrollresultx = Scrollbar(results, orient=HORIZONTAL, command=results.xview, cursor="hand2")
+    results['yscroll'] = scrollresulty.set
+    results['xscroll'] = scrollresultx.set
+    scrollresulty.pack(side=RIGHT, fill=Y)
+    scrollresultx.pack(side=BOTTOM, fill=X)
+
 
     # checks stationinfo results
     def stationinfo():
@@ -106,7 +121,7 @@ def command():
             if departureXML['error']['message'] == 'Foreign stations are not supported.':
                 messagebox.showinfo("Error", "Buitenlandse stations kunt u hiervoor niet gebruiken.")
                 return
-            elif vertrekXML['error']['message'].startswith("Error while trying to get departure information for station"):
+            elif departureXML['error']['message'].startswith("Error while trying to get departure information for station"):
                 messagebox.showinfo("Error", "Op het moment kunnen wij niet de data van NS verkrijgen.\n"
                                              "probeer later nog eens!")
                 return
@@ -146,13 +161,13 @@ def command():
 
         # getting formatted entries from the comboboxes
         departure = 'fromStation=' + str(entry_from.get()).replace(' ', '+')
-        eindstation = 'toStation=' + str(entry_to.get()).replace(' ', '+')
+        destination = 'toStation=' + str(entry_to.get()).replace(' ', '+')
 
         # checks if is input is valid
         if check_route_stations(entry_from.get(), entry_to.get(), stations) == False:
             return
 
-        search_url = api_url_route + vertrekstation + '&' + eindstation
+        search_url = api_url_route + departure + '&' + destination
         # sets the default to alphen if there is no input
         if search_url == 'http://webservices.ns.nl/ns-api-treinplanner?':
             search_url = 'http://webservices.ns.nl/ns-api-treinplanner?fromStation=Utrecht+Centraal&toStation=Wierden'
@@ -169,7 +184,7 @@ def command():
             return
 
         # make a table to display
-        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^11s}|{:^10s}|{:^10s}|{:^15}\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Aankomsttijd", "Reistijd", "Optimaal", "Status"))
+        results.insert(0.0, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s}|{:^10s}|{:^10s}|{:^15}|{:^15}|\n".format("Vertrekstation", "Vertrektijd", "Eindstation", "Overstappen", "Aankomsttijd", "Reistijd", "Optimaal", "Status", "Spoor"))
 
         for vertrek in vertrekXML['ReisMogelijkheden']['ReisMogelijkheid']:
             melding = False
@@ -193,9 +208,12 @@ def command():
                 geplandeaankomsttijd = vertrek['GeplandeAankomstTijd']  # 2016-09-27T18:36:00+0200
                 actueleaankomsttijd = vertrek['ActueleAankomstTijd']  # 2016-09-27T18:36:00+0200
                 status = vertrek['Status']
+                spoor = getrails(vertrek)
 
                 f_actuelevertrektijd = actuelevertrektijd[5:10] + ":" + actuelevertrektijd[11:16]
                 f_actueleaankomsttijd = actueleaankomsttijd[5:10] + ":" + actueleaankomsttijd[11:16]
+
+
 
             except:
                 print("Exception raised when assiging routeinformation variables")
@@ -211,10 +229,9 @@ def command():
                     results.insert(END, "PAS OP! De volgende reis heeft een melding: " + text + "\n")
 
             # Handling output. The headers are handled outside the for loop, END to reverse the order
-            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^11s} |{:^10s}|{:^10s}|{:^15}\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), f_actueleaankomsttijd, actuelereistijd, optimaal, status))
+            results.insert(END, "{:^30s}|{:^11s}|{:^36s}|{:^15s}|{:^11s} |{:^10s}|{:^10s}|{:^15}|{:^15}\n".format(entry_from.get(), f_actuelevertrektijd, entry_to.get(), aantaloverstappen, f_actueleaankomsttijd, actuelereistijd, optimaal, status, spoor))
 
             results.pack(side=LEFT, fill='both', expand=YES, padx=5, pady=5)
-
 
     def showhome():
         root.deiconify()
