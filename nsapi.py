@@ -2,7 +2,7 @@
 This project is made by:
     - Santino den Brave
     - Lucas van den Berg
-    - Paul kuster
+    - Paul Kuster
     - Youri Okkerse
     - Nicky Schoenmakers
     - Youri Mulder
@@ -126,6 +126,9 @@ ticketbtn = Button(master = root, text="Kopen \n los kaartje", foreground="white
 # assign image
 nsimg = ImageTk.PhotoImage(Image.open("img/ns_img.png"))
 
+#assign icon image
+root.iconbitmap("img/ns_logo_icon.ico")
+
 # assign labels
 footer = Label(master = root, background=fg)
 panel = Label(root, image = nsimg, background=bg)
@@ -140,7 +143,10 @@ def command():
     top.geometry("900x550")
     top.resizable(width=False, height=False)
     top.title("Plan uw reis")
+    top.iconbitmap("img/ns_logo_icon.ico")
     root.withdraw()
+
+
 
     txtframe = Frame(top, background=bg, padx=5, pady=5)
     results = Text(txtframe, background=bg, foreground=fg, font=('Consolas', 8), wrap=NONE, relief=FLAT)
@@ -330,7 +336,7 @@ def command():
     entry_from.insert(END, 'Alphen a/d Rijn')
     entry_from['values'] = stations
 
-    homebtn = Button(top, text="Terug", font=('Helvetica', 10), command=showhome)
+    homebtn = Button(top, text="Terug", font=('Helvetica', 10), foreground="white", background=fg, command=showhome)
     from_text = Label(top, text="van", foreground=fg, background=bg, font=('Helvetica', 12, 'bold'))
 
     # create entry_to field and dropdown menu
@@ -342,8 +348,8 @@ def command():
     to_text = Label(top, text="naar", foreground=fg, background=bg, font=('Helvetica', 12, 'bold'))
     description = Label(top, text="Of zoek uw reis handmatig:", foreground=fg, background=bg, font=('Helvetica', 12, 'bold'))
     footer = Label(master=top, background=fg)
-    currentbtn = Button(top, text="Huidige stationsinformatie", command=stationinfo)
-    searchbtn = Button(top, text="Traject informatie", command=routeinformation)
+    currentbtn = Button(top, text="Huidige stationsinformatie", foreground="white", background=fg, command=stationinfo)
+    searchbtn = Button(top, text="Traject informatie", foreground="white", background=fg, command=routeinformation)
     title = Label(top, text="Welkom bij NS", foreground=fg, background=bg, font=('Helvetica', 22, 'bold'))
 
     # prints the variables to the GUI
